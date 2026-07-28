@@ -97,7 +97,7 @@ const AssetTable: React.FC<AssetTableProps> = ({ sessions, scenarioData, loading
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-slate-900 mb-2">Asset Balances by Currency</h3>
         <p className="text-sm text-slate-600">
-          Showing data from {recentSessions.length} most recent session{recentSessions.length > 1 ? 's' : ''}
+          Showing data from {recentSessions.length} most recent selected session{recentSessions.length > 1 ? 's' : ''}
         </p>
       </div>
 

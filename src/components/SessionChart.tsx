@@ -11,6 +11,20 @@ interface SessionChartProps {
 const SessionChart: React.FC<SessionChartProps> = ({ sessions, scenarioData, loading }) => {
   const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
+  const getYAxisDomainMax = (maxValue: number) => {
+    const safeMax = Math.max(maxValue, 0);
+
+    if (safeMax === 0) {
+      return 1;
+    }
+
+    const target = safeMax * 1.2;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(safeMax)));
+    const step = Math.max(1, magnitude / 5);
+
+    return Math.ceil(target / step) * step;
+  };
+
   // Calculate JPY equivalent balance using FX rates
   const calculateJPYEquivalent = (balances: Record<string, number>, rates: Record<string, number>) => {
     let total = balances.JPY || 0;
@@ -49,7 +63,7 @@ const SessionChart: React.FC<SessionChartProps> = ({ sessions, scenarioData, loa
     return sortedDates.map(date => {
       const dataPoint: any = { date };
       
-      sessions.forEach((session, index) => {
+      sessions.forEach(session => {
         const balances = session.dateToBalances[date];
         const rates = scenarioData.dateToCurrencyPairToRate[date];
         
@@ -63,7 +77,7 @@ const SessionChart: React.FC<SessionChartProps> = ({ sessions, scenarioData, loa
     });
   }, [sessions, scenarioData]);
 
-  // Calculate Y-axis domain with 10% margin and round to nearest 1000
+  // Calculate Y-axis domain with a rounded upper bound and zero start
   const yAxisDomain = React.useMemo(() => {
     if (chartData.length === 0 || sessions.length === 0) {
       return ['dataMin', 'dataMax'];
@@ -86,10 +100,8 @@ const SessionChart: React.FC<SessionChartProps> = ({ sessions, scenarioData, loa
       return ['dataMin', 'dataMax'];
     }
 
-    const range = max - min;
-    const margin = range * 0.1;
-    const domainMin = Math.floor((min - margin) / 1000) * 1000;
-    const domainMax = Math.ceil((max + margin) / 1000) * 1000;
+    const domainMin = 0;
+    const domainMax = getYAxisDomainMax(max);
 
     return [domainMin, domainMax];
   }, [chartData, sessions]);
@@ -148,6 +160,7 @@ const SessionChart: React.FC<SessionChartProps> = ({ sessions, scenarioData, loa
           />
           <YAxis 
             domain={yAxisDomain}
+            tickCount={5}
             tickFormatter={(value) => `¥${(value / 1000).toFixed(0)}K`}
             stroke="#64748b"
             fontSize={12}

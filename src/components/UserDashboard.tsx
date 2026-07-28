@@ -15,6 +15,8 @@ const UserDashboard: React.FC = () => {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [selectedSessions, setSelectedSessions] = useState<number[]>([]);
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
+  const [expandedScenario, setExpandedScenario] = useState<string | null>(null);
+  const [scenarioFilter, setScenarioFilter] = useState<'Evaluation' | 'Test'>('Test');
   const [sessionDetails, setSessionDetails] = useState<SessionDetail[]>([]);
   const [scenarioData, setScenarioData] = useState<ScenarioData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ const UserDashboard: React.FC = () => {
     loadSessions();
   }, [userId]);
 
-  // Load scenario data when scenario changes
+  // Load scenario data for the selected scenario
   useEffect(() => {
     const loadScenarioData = async () => {
       if (!selectedScenario) {
@@ -55,6 +57,7 @@ const UserDashboard: React.FC = () => {
         setScenarioLoading(true);
         const data = await fetchScenarioData(selectedScenario);
         setScenarioData(data);
+        setError(null);
       } catch (err) {
         console.error('Error loading scenario data:', err);
         setError('Failed to load scenario data');
@@ -92,19 +95,46 @@ const UserDashboard: React.FC = () => {
   }, [selectedSessions]);
 
   const handleSessionSelect = (sessionId: number) => {
+    const clickedSession = sessions.find(session => session.sessionId === sessionId);
+    if (!clickedSession) {
+      return;
+    }
+
+    if (selectedScenario && selectedScenario !== clickedSession.scenario) {
+      setSelectedScenario(clickedSession.scenario);
+      setSelectedSessions([sessionId]);
+      return;
+    }
+
+    setSelectedScenario(clickedSession.scenario);
     setSelectedSessions(prev => {
       if (prev.includes(sessionId)) {
-        return prev.filter(id => id !== sessionId);
-      } else {
-        return [...prev, sessionId];
+        const nextSessions = prev.filter(id => id !== sessionId);
+        if (nextSessions.length === 0) {
+          setSelectedScenario(null);
+        }
+        return nextSessions;
       }
+
+      return [...prev, sessionId];
     });
   };
 
-  const handleScenarioChange = (scenario: string) => {
-    setSelectedScenario(scenario);
+  const handleScenarioToggle = (scenario: string) => {
+    setExpandedScenario(prev => (prev === scenario ? null : scenario));
+    setSelectedScenario(null);
     setSelectedSessions([]);
     setSessionDetails([]);
+    setScenarioData(null);
+  };
+
+  const handleScenarioFilterChange = (nextFilter: 'Evaluation' | 'Test') => {
+    setScenarioFilter(nextFilter);
+    setExpandedScenario(null);
+    setSelectedScenario(null);
+    setSelectedSessions([]);
+    setSessionDetails([]);
+    setScenarioData(null);
   };
 
   const handleRefresh = async () => {
@@ -188,8 +218,11 @@ const UserDashboard: React.FC = () => {
             sessions={sessions}
             selectedSessions={selectedSessions}
             selectedScenario={selectedScenario}
+            expandedScenario={expandedScenario}
+            scenarioFilter={scenarioFilter}
+            onScenarioFilterChange={handleScenarioFilterChange}
+            onScenarioToggle={handleScenarioToggle}
             onSessionSelect={handleSessionSelect}
-            onScenarioChange={handleScenarioChange}
             loading={loading}
           />
         </div>
