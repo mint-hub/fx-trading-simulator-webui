@@ -13,6 +13,12 @@ const FXRatesChart: React.FC<FXRatesChartProps> = ({ scenarioData, loading, sele
   const [selectedPairs, setSelectedPairs] = useState<string[]>(['USD/JPY', 'EUR/JPY']);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  React.useEffect(() => {
+    if (!selectedScenario || !scenarioData) {
+      setIsDropdownOpen(false);
+    }
+  }, [selectedScenario, scenarioData]);
+
   const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
 
   // Check if current scenario should hide FX rates
@@ -74,7 +80,7 @@ const FXRatesChart: React.FC<FXRatesChartProps> = ({ scenarioData, loading, sele
     });
   }, [scenarioData, selectedPairs, shouldHideRates]);
 
-  // Calculate Y-axis domain with 10% margin
+  // Calculate Y-axis domain with a rounded upper bound and zero start
   const yAxisDomain = React.useMemo(() => {
     if (chartData.length === 0 || selectedPairs.length === 0) {
       return ['dataMin', 'dataMax'];

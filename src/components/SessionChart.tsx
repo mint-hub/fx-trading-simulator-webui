@@ -49,7 +49,7 @@ const SessionChart: React.FC<SessionChartProps> = ({ sessions, scenarioData, loa
     return sortedDates.map(date => {
       const dataPoint: any = { date };
       
-      sessions.forEach((session, index) => {
+      sessions.forEach(session => {
         const balances = session.dateToBalances[date];
         const rates = scenarioData.dateToCurrencyPairToRate[date];
         
@@ -63,7 +63,7 @@ const SessionChart: React.FC<SessionChartProps> = ({ sessions, scenarioData, loa
     });
   }, [sessions, scenarioData]);
 
-  // Calculate Y-axis domain with 10% margin and round to nearest 1000
+  // Calculate Y-axis domain with a rounded upper bound and zero start
   const yAxisDomain = React.useMemo(() => {
     if (chartData.length === 0 || sessions.length === 0) {
       return ['dataMin', 'dataMax'];
