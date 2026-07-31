@@ -13,21 +13,13 @@ const FXRatesChart: React.FC<FXRatesChartProps> = ({ scenarioData, loading, sele
   const [selectedPairs, setSelectedPairs] = useState<string[]>(['USD/JPY', 'EUR/JPY']);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
-
-  const getYAxisDomainMax = (maxValue: number) => {
-    const safeMax = Math.max(maxValue, 0);
-
-    if (safeMax === 0) {
-      return 1;
+  React.useEffect(() => {
+    if (!selectedScenario || !scenarioData) {
+      setIsDropdownOpen(false);
     }
+  }, [selectedScenario, scenarioData]);
 
-    const target = safeMax * 1.2;
-    const magnitude = Math.pow(10, Math.floor(Math.log10(safeMax)));
-    const step = Math.max(1, magnitude / 5);
-
-    return Math.ceil(target / step) * step;
-  };
+  const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
 
   // Check if current scenario should hide FX rates
   const hiddenScenarios = ['Feb_Apr_2017', 'Jun_Aug_2017'];
@@ -111,8 +103,10 @@ const FXRatesChart: React.FC<FXRatesChartProps> = ({ scenarioData, loading, sele
       return ['dataMin', 'dataMax'];
     }
 
-    const domainMin = 0;
-    const domainMax = getYAxisDomainMax(max);
+    const range = max - min;
+    const margin = range * 0.1;
+    const domainMin = Math.floor(min - margin);
+    const domainMax = Math.ceil(max + margin);
 
     return [domainMin, domainMax];
   }, [chartData, selectedPairs]);
@@ -240,7 +234,6 @@ const FXRatesChart: React.FC<FXRatesChartProps> = ({ scenarioData, loading, sele
               />
               <YAxis
                 domain={yAxisDomain}
-                tickCount={5}
                 tickFormatter={formatRate}
                 stroke="#64748b"
                 fontSize={12}

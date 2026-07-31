@@ -100,19 +100,20 @@ const UserDashboard: React.FC = () => {
       return;
     }
 
-    if (selectedScenario && selectedScenario !== clickedSession.scenario) {
-      setSelectedScenario(clickedSession.scenario);
+    const currentSessionScenario = selectedScenario ?? (
+      selectedSessions.length > 0
+        ? sessions.find(session => session.sessionId === selectedSessions[0])?.scenario
+        : null
+    );
+
+    if (currentSessionScenario && currentSessionScenario !== clickedSession.scenario) {
       setSelectedSessions([sessionId]);
       return;
     }
 
-    setSelectedScenario(clickedSession.scenario);
     setSelectedSessions(prev => {
       if (prev.includes(sessionId)) {
         const nextSessions = prev.filter(id => id !== sessionId);
-        if (nextSessions.length === 0) {
-          setSelectedScenario(null);
-        }
         return nextSessions;
       }
 
@@ -121,8 +122,11 @@ const UserDashboard: React.FC = () => {
   };
 
   const handleScenarioToggle = (scenario: string) => {
-    setExpandedScenario(prev => (prev === scenario ? null : scenario));
-    setSelectedScenario(null);
+    setExpandedScenario(prev => {
+      const nextScenario = prev === scenario ? null : scenario;
+      setSelectedScenario(nextScenario);
+      return nextScenario;
+    });
     setSelectedSessions([]);
     setSessionDetails([]);
     setScenarioData(null);
