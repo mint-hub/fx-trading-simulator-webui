@@ -1,7 +1,7 @@
 import React from 'react';
 import { SessionDetail, ScenarioData } from '../types/api';
 import { calculateJPYEquivalent, formatCurrency, SUPPORTED_CURRENCIES } from '../utils/currency';
-import { formatDateTimeUtc, parseDateTimeUtcMs } from '../utils/datetime';
+import { formatDateTimeUtc } from '../utils/datetime';
 
 interface AssetTableProps {
   sessions: SessionDetail[];
@@ -12,18 +12,6 @@ interface AssetTableProps {
 const AssetTable: React.FC<AssetTableProps> = ({ sessions, scenarioData, loading }) => {
   // Get the most recent 2 sessions
   const recentSessions = sessions.slice(-2);
-
-  const sortedRateEntries = React.useMemo(() => {
-    if (!scenarioData) return [];
-
-    return Object.entries(scenarioData.dateToCurrencyPairToRate)
-      .map(([timestamp, rates]) => ({
-        ms: parseDateTimeUtcMs(timestamp),
-        rates,
-      }))
-      .filter((entry): entry is { ms: number; rates: Record<string, number> } => entry.ms !== null)
-      .sort((a, b) => a.ms - b.ms);
-  }, [scenarioData]);
   
   const formatDateTime = (dateStr: string) => {
     return formatDateTimeUtc(dateStr);
@@ -31,33 +19,13 @@ const AssetTable: React.FC<AssetTableProps> = ({ sessions, scenarioData, loading
 
   // Calculate JPY equivalent total using FX rates
   const calculateJPYEquivalentTotal = (balances: Record<string, number>, date: string) => {
-    if (!scenarioData) {
-      return null;
-    }
-
-    let rates = scenarioData.dateToCurrencyPairToRate[date];
-    if (!rates) {
-      const targetMs = parseDateTimeUtcMs(date);
-      if (targetMs === null || sortedRateEntries.length === 0) {
-        return null;
-      }
-
-      for (const entry of sortedRateEntries) {
-        if (entry.ms <= targetMs) {
-          rates = entry.rates;
-          continue;
-        }
-        break;
-      }
-    }
-
-    if (!rates) {
+    if (!scenarioData || !scenarioData.dateToCurrencyPairToRate[date]) {
       return null;
     }
 
     return calculateJPYEquivalent(
       balances,
-      rates,
+      scenarioData.dateToCurrencyPairToRate[date],
     );
   };
 

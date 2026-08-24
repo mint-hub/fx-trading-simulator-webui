@@ -199,7 +199,7 @@ const mockScenarioData: Record<string, ScenarioData> = {
       '2016-01-20': { 'USD/JPY': 118.7, 'EUR/JPY': 129.6, 'AUD/JPY': 85.3, 'HKD/JPY': 15.2 },
       '2016-01-21': { 'USD/JPY': 118.9, 'EUR/JPY': 129.9, 'AUD/JPY': 85.6, 'HKD/JPY': 15.23 },
       '2016-01-22': { 'USD/JPY': 119.1, 'EUR/JPY': 130.2, 'AUD/JPY': 85.8, 'HKD/JPY': 15.26 },
-      '2016-01-22T12:00:00': { 'USD/JPY': 119.1, 'EUR/JPY': 130.2, 'AUD/JPY': 85.8, 'HKD/JPY': 15.26 },
+      '2016-01-22T12:08:00': { 'USD/JPY': 79.1, 'EUR/JPY': 130.2, 'AUD/JPY': 85.8, 'HKD/JPY': 15.26 },
       '2016-01-25': { 'USD/JPY': 119.0, 'EUR/JPY': 130.0, 'AUD/JPY': 85.7, 'HKD/JPY': 15.24 },
       '2016-01-27': { 'USD/JPY': 118.8, 'EUR/JPY': 129.7, 'AUD/JPY': 85.5, 'HKD/JPY': 15.21 },
     },
