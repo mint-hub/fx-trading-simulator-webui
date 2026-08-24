@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { SessionInfo } from '../types/api';
 import { Calendar, ChevronDown, CheckCircle, Clock, TrendingUp, TrendingDown } from 'lucide-react';
+import { formatDateTimeUtc } from '../utils/datetime';
 
 interface SessionListProps {
   sessions: SessionInfo[];
@@ -53,12 +54,8 @@ const SessionList: React.FC<SessionListProps> = ({
     }).format(amount);
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
+  const formatDateTime = (dateStr: string) => {
+    return formatDateTimeUtc(dateStr);
   };
 
   if (loading) {
@@ -189,7 +186,7 @@ const SessionList: React.FC<SessionListProps> = ({
                             </div>
                             <div className="mt-2 flex items-center gap-2 text-sm text-slate-600">
                               <Calendar className="h-3.5 w-3.5" />
-                              <span>{formatDate(session.startDate)} - {formatDate(session.endDate)}</span>
+                              <span>{formatDateTime(session.startDate)} - {formatDateTime(session.endDate)}</span>
                             </div>
                           </div>
 

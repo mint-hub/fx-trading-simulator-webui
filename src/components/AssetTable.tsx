@@ -1,6 +1,7 @@
 import React from 'react';
 import { SessionDetail, ScenarioData } from '../types/api';
 import { calculateJPYEquivalent, formatCurrency, SUPPORTED_CURRENCIES } from '../utils/currency';
+import { formatDateTimeUtc, parseDateTimeUtcMs } from '../utils/datetime';
 
 interface AssetTableProps {
   sessions: SessionDetail[];
@@ -11,21 +12,52 @@ interface AssetTableProps {
 const AssetTable: React.FC<AssetTableProps> = ({ sessions, scenarioData, loading }) => {
   // Get the most recent 2 sessions
   const recentSessions = sessions.slice(-2);
+
+  const sortedRateEntries = React.useMemo(() => {
+    if (!scenarioData) return [];
+
+    return Object.entries(scenarioData.dateToCurrencyPairToRate)
+      .map(([timestamp, rates]) => ({
+        ms: parseDateTimeUtcMs(timestamp),
+        rates,
+      }))
+      .filter((entry): entry is { ms: number; rates: Record<string, number> } => entry.ms !== null)
+      .sort((a, b) => a.ms - b.ms);
+  }, [scenarioData]);
   
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const formatDateTime = (dateStr: string) => {
+    return formatDateTimeUtc(dateStr);
   };
 
   // Calculate JPY equivalent total using FX rates
   const calculateJPYEquivalentTotal = (balances: Record<string, number>, date: string) => {
-    if (!scenarioData || !scenarioData.dateToCurrencyPairToRate[date]) {
+    if (!scenarioData) {
+      return null;
+    }
+
+    let rates = scenarioData.dateToCurrencyPairToRate[date];
+    if (!rates) {
+      const targetMs = parseDateTimeUtcMs(date);
+      if (targetMs === null || sortedRateEntries.length === 0) {
+        return null;
+      }
+
+      for (const entry of sortedRateEntries) {
+        if (entry.ms <= targetMs) {
+          rates = entry.rates;
+          continue;
+        }
+        break;
+      }
+    }
+
+    if (!rates) {
       return null;
     }
 
     return calculateJPYEquivalent(
       balances,
-      scenarioData.dateToCurrencyPairToRate[date],
+      rates,
     );
   };
 
@@ -111,7 +143,7 @@ const AssetTable: React.FC<AssetTableProps> = ({ sessions, scenarioData, loading
                     return (
                       <tr key={date} className="border-b border-slate-100 hover:bg-slate-50">
                         <td className="py-3 px-4 text-sm font-medium text-slate-900">
-                          {formatDate(date)}
+                          {formatDateTime(date)}
                         </td>
                         {SUPPORTED_CURRENCIES.map(currency => (
                           <td key={currency} className="py-3 px-4 text-sm text-right text-slate-700">

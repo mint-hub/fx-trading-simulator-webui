@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ScenarioData } from '../types/api';
 import { Check, ChevronDown } from 'lucide-react';
+import { formatDateTimeUtc } from '../utils/datetime';
 
 interface FXRatesChartProps {
   scenarioData: ScenarioData | null;
@@ -25,29 +26,6 @@ const FXRatesChart: React.FC<FXRatesChartProps> = ({ scenarioData, loading, sele
   const hiddenScenarios = ['Feb_Apr_2017', 'Jun_Aug_2017'];
   const shouldHideRates = selectedScenario && hiddenScenarios.includes(selectedScenario);
 
-  // Helper function to extract the quote currency (after /) from currency pair
-  const getQuoteCurrency = (currencyPair: string): string => {
-    return currencyPair.split('/')[1] || '';
-  };
-
-  // Sort currency pairs with JPY pairs first, then by quote currency
-  const sortCurrencyPairs = (pairs: string[]): string[] => {
-    return pairs.sort((a, b) => {
-      const quoteCurrencyA = getQuoteCurrency(a);
-      const quoteCurrencyB = getQuoteCurrency(b);
-
-      // JPY pairs come first
-      if (quoteCurrencyA === 'JPY' && quoteCurrencyB !== 'JPY') return -1;
-      if (quoteCurrencyA !== 'JPY' && quoteCurrencyB === 'JPY') return 1;
-
-      // Sort by quote currency, then by full pair name if quote currencies are equal
-      if (quoteCurrencyA === quoteCurrencyB) {
-        return a.localeCompare(b);
-      }
-      return quoteCurrencyA.localeCompare(quoteCurrencyB);
-    });
-  };
-
   // Get all available currency pairs
   const availablePairs = React.useMemo(() => {
     if (!scenarioData || shouldHideRates) return [];
@@ -57,7 +35,18 @@ const FXRatesChart: React.FC<FXRatesChartProps> = ({ scenarioData, loading, sele
       Object.keys(rates).forEach(pair => pairs.add(pair));
     });
 
-    return sortCurrencyPairs(Array.from(pairs));
+    return Array.from(pairs).sort((a, b) => {
+      const quoteCurrencyA = a.split('/')[1] || '';
+      const quoteCurrencyB = b.split('/')[1] || '';
+
+      if (quoteCurrencyA === 'JPY' && quoteCurrencyB !== 'JPY') return -1;
+      if (quoteCurrencyA !== 'JPY' && quoteCurrencyB === 'JPY') return 1;
+
+      if (quoteCurrencyA === quoteCurrencyB) {
+        return a.localeCompare(b);
+      }
+      return quoteCurrencyA.localeCompare(quoteCurrencyB);
+    });
   }, [scenarioData, shouldHideRates]);
 
   // Prepare chart data
@@ -67,7 +56,7 @@ const FXRatesChart: React.FC<FXRatesChartProps> = ({ scenarioData, loading, sele
     const sortedDates = Object.keys(scenarioData.dateToCurrencyPairToRate).sort();
 
     return sortedDates.map(date => {
-      const dataPoint: any = { date };
+      const dataPoint: Record<string, string | number> = { date };
       const rates = scenarioData.dateToCurrencyPairToRate[date];
 
       selectedPairs.forEach(pair => {
@@ -111,11 +100,8 @@ const FXRatesChart: React.FC<FXRatesChartProps> = ({ scenarioData, loading, sele
     return [domainMin, domainMax];
   }, [chartData, selectedPairs]);
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    });
+  const formatDateTime = (dateStr: string) => {
+    return formatDateTimeUtc(dateStr);
   };
 
   const formatRate = (value: number) => {
@@ -228,7 +214,7 @@ const FXRatesChart: React.FC<FXRatesChartProps> = ({ scenarioData, loading, sele
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis
                 dataKey="date"
-                tickFormatter={formatDate}
+                tickFormatter={formatDateTime}
                 stroke="#64748b"
                 fontSize={12}
               />
@@ -243,7 +229,7 @@ const FXRatesChart: React.FC<FXRatesChartProps> = ({ scenarioData, loading, sele
                   formatRate(value),
                   name
                 ]}
-                labelFormatter={(label) => `Date: ${formatDate(label)}`}
+                labelFormatter={(label) => `DateTime: ${formatDateTime(label)}`}
                 contentStyle={{
                   backgroundColor: 'white',
                   border: '1px solid #e2e8f0',

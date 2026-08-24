@@ -2,6 +2,7 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { SessionDetail, ScenarioData } from '../types/api';
 import { calculateJPYEquivalent, formatCurrency } from '../utils/currency';
+import { formatDateTimeUtc, parseDateTimeUtcMs } from '../utils/datetime';
 
 interface SessionChartProps {
   sessions: SessionDetail[];
@@ -15,6 +16,36 @@ const SessionChart: React.FC<SessionChartProps> = ({ sessions, scenarioData, loa
   // Prepare chart data
   const chartData = React.useMemo(() => {
     if (sessions.length === 0 || !scenarioData) return [];
+
+    const sortedRateEntries = Object.entries(scenarioData.dateToCurrencyPairToRate)
+      .map(([timestamp, rates]) => ({
+        timestamp,
+        ms: parseDateTimeUtcMs(timestamp),
+        rates,
+      }))
+      .filter((entry): entry is { timestamp: string; ms: number; rates: Record<string, number> } => entry.ms !== null)
+      .sort((a, b) => a.ms - b.ms);
+
+    const findRatesForDate = (date: string): Record<string, number> | undefined => {
+      const exact = scenarioData.dateToCurrencyPairToRate[date];
+      if (exact) return exact;
+
+      const targetMs = parseDateTimeUtcMs(date);
+      if (targetMs === null || sortedRateEntries.length === 0) {
+        return undefined;
+      }
+
+      let candidate: Record<string, number> | undefined;
+      for (const entry of sortedRateEntries) {
+        if (entry.ms <= targetMs) {
+          candidate = entry.rates;
+          continue;
+        }
+        break;
+      }
+
+      return candidate;
+    };
 
     // Get all unique dates from all sessions
     const allDates = new Set<string>();
@@ -31,7 +62,7 @@ const SessionChart: React.FC<SessionChartProps> = ({ sessions, scenarioData, loa
       
       sessions.forEach(session => {
         const balances = session.dateToBalances[date];
-        const rates = scenarioData.dateToCurrencyPairToRate[date];
+        const rates = findRatesForDate(date);
         
         if (balances && rates) {
           const jpyEquivalent = calculateJPYEquivalent(balances, rates);
@@ -74,11 +105,8 @@ const SessionChart: React.FC<SessionChartProps> = ({ sessions, scenarioData, loa
     return [domainMin, domainMax];
   }, [chartData, sessions]);
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    });
+  const formatDateTime = (dateStr: string) => {
+    return formatDateTimeUtc(dateStr);
   };
 
   if (loading) {
@@ -113,7 +141,7 @@ const SessionChart: React.FC<SessionChartProps> = ({ sessions, scenarioData, loa
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
           <XAxis 
             dataKey="date" 
-            tickFormatter={formatDate}
+            tickFormatter={formatDateTime}
             stroke="#64748b"
             fontSize={12}
           />
@@ -128,7 +156,7 @@ const SessionChart: React.FC<SessionChartProps> = ({ sessions, scenarioData, loa
               formatCurrency(value, 'JPY'),
               name
             ]}
-            labelFormatter={(label) => `Date: ${formatDate(label)}`}
+            labelFormatter={(label) => `DateTime: ${formatDateTime(label)}`}
             contentStyle={{
               backgroundColor: 'white',
               border: '1px solid #e2e8f0',
